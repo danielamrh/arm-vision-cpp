@@ -78,3 +78,7 @@ Frame and units: metres, origin at the base centre on the table, z up, x along b
 
 See [docs/ROADMAP.md](docs/ROADMAP.md). Milestone 0 (scaffold, kinematics, protocol, serial
 driver, tests) is done. The serial driver and the vision apps are not yet tested on hardware.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
