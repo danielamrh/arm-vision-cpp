@@ -8,3 +8,6 @@ out/
 markers/
 captures/
 CMakeUserPresets.json
+
+# PlatformIO
+firmware/.pio/

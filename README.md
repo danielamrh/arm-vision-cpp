@@ -6,7 +6,7 @@ kinematics and serial control and ending with closed-loop visual servoing and pi
 
 **Hardware**
 - Spacnana SNAM1500 arm with 4× SG90 servos (base, shoulder, elbow, gripper)
-- ESP32-S3 running [`firmware/src/main.cpp`](../firmware/src/main.cpp) (text protocol, 115200 baud)
+- ESP32-S3 running [`firmware/src/main.cpp`](firmware/src/main.cpp) (text protocol, 115200 baud)
 - A USB webcam and printed ArUco markers
 
 ## Layout
@@ -25,6 +25,7 @@ apps/
   camera_view           live webcam view with ArUco detection     [OpenCV]
   make_markers          print-ready ArUco markers                 [OpenCV]
 tests/                  GoogleTest unit tests
+firmware/               ESP32-S3 firmware (PlatformIO, Arduino framework)
 docs/ROADMAP.md         milestones and what each one teaches
 ```
 
