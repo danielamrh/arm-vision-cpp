@@ -77,7 +77,8 @@ Frame and units: metres, origin at the base centre on the table, z up, x along b
 ## Status
 
 See [docs/ROADMAP.md](docs/ROADMAP.md). Milestone 0 (scaffold, kinematics, protocol, serial
-driver, tests) is done. The serial driver and the vision apps are not yet tested on hardware.
+driver, tests) is done. Vision builds against OpenCV 4.14; marker detection is unit-tested on
+synthetic images. The serial driver and `camera_view` are not yet tested with real hardware.
 
 ## License
 
