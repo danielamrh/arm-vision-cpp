@@ -49,8 +49,7 @@ VID 303A PID 1001). `ARDUINO_USB_CDC_ON_BOOT=1` in `platformio.ini` routes `Seri
 without it `Serial` goes to UART0 and the host never gets an answer.
 
 On startup all servos move to 90° and the board prints `READY`. Then it accepts
-`"<base>,<shoulder>,<elbow>,<gripper>
-"` (integer degrees, clamped to the joint limits),
+`"<base>,<shoulder>,<elbow>,<gripper>\n"` (integer degrees, clamped to the joint limits),
 moves, and answers `OK` (or `ERR: bad format: ...`).
 
 ## Notes
