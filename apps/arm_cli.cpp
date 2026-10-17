@@ -23,10 +23,11 @@ using armvision::JointAngles;
 
 int usage() {
     std::cerr << "usage:\n"
-                 "  arm_cli [--port COM3 | --sim] [--flip-elbow] home\n"
-                 "  arm_cli [--port COM3 | --sim] [--flip-elbow] joints <b> <s> <e> <g>\n"
-                 "  arm_cli [--port COM3 | --sim] [--flip-elbow] xyz <x> <y> <z>\n"
-                 "  arm_cli fk <b> <s> <e>\n";
+                 "  arm_cli [--port COM3 | --sim] [options] home\n"
+                 "  arm_cli [--port COM3 | --sim] [options] joints <b> <s> <e> <g>\n"
+                 "  arm_cli [--port COM3 | --sim] [options] xyz <x> <y> <z>\n"
+                 "  arm_cli fk <b> <s> <e>\n"
+                 "options: --flip-elbow, --no-flip-shoulder\n";
     return EXIT_FAILURE;
 }
 
