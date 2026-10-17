@@ -19,6 +19,13 @@ JointAngles clampToLimits(const JointAngles& q, const ArmConfig& cfg) {
             clamp(q.gripper, cfg.gripper)};
 }
 
+JointAngles toServoAngles(const JointAngles& q, const ArmConfig& cfg) {
+    JointAngles servo = q;
+    if (cfg.shoulder_inverted) servo.shoulder = 180.0 - servo.shoulder;
+    if (cfg.elbow_inverted) servo.elbow = 180.0 - servo.elbow;
+    return servo;
+}
+
 bool withinLimits(const JointAngles& q, const ArmConfig& cfg, double tol) {
     return inside(q.base, cfg.base, tol) && inside(q.shoulder, cfg.shoulder, tol) &&
            inside(q.elbow, cfg.elbow, tol) && inside(q.gripper, cfg.gripper, tol);

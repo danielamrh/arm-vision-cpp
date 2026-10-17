@@ -30,9 +30,7 @@ void SerialArmDriver::waitForReady() {
 void SerialArmDriver::moveTo(const JointAngles& q) {
     const JointAngles target = clampToLimits(q, cfg_);
 
-    JointAngles wire = target;
-    if (cfg_.elbow_inverted) wire.elbow = 180.0 - wire.elbow;
-    port_.write(protocol::encodeCommand(wire));
+    port_.write(protocol::encodeCommand(toServoAngles(target, cfg_)));
 
     const auto deadline = std::chrono::steady_clock::now() + opts_.ack_timeout;
     while (std::chrono::steady_clock::now() < deadline) {

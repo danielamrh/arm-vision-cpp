@@ -30,11 +30,17 @@ struct ArmConfig {
     JointLimits elbow{30.0, 150.0};
     JointLimits gripper{60.0, 120.0};
 
-    /// Elbow servo mounted the other way round (same as deploy.py --flip-elbow).
-    bool elbow_inverted{false};
+    // Servos mounted the other way round: the firmware gets 180° - angle.
+    // Kinematics always works with the model convention (see kinematics.hpp).
+    bool shoulder_inverted{true};  // measured on the real arm: 120° lowered the tip
+    bool elbow_inverted{false};    // same as deploy.py --flip-elbow
 };
 
 [[nodiscard]] JointAngles clampToLimits(const JointAngles& q, const ArmConfig& cfg);
+/// Model angles -> angles the firmware has to receive (applies the inversions).
+/// The mapping is its own inverse, so it also converts servo angles back to model angles.
+[[nodiscard]] JointAngles toServoAngles(const JointAngles& q, const ArmConfig& cfg);
+
 [[nodiscard]] bool withinLimits(const JointAngles& q, const ArmConfig& cfg, double tol = 1e-9);
 
 }  // namespace armvision

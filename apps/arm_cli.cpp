@@ -1,7 +1,7 @@
 // arm_cli — move the arm from the command line.
 //
-//   arm_cli [--port COM3 | --sim] [--flip-elbow] home
-//   arm_cli ... joints <base> <shoulder> <elbow> <gripper>   servo degrees
+//   arm_cli [--port COM3 | --sim] [--flip-elbow] [--no-flip-shoulder] home
+//   arm_cli ... joints <base> <shoulder> <elbow> <gripper>   model degrees (see arm_config.hpp)
 //   arm_cli ... xyz <x> <y> <z>                              metres, base frame (uses IK)
 //   arm_cli fk <base> <shoulder> <elbow>                     print tip position, no hardware
 
@@ -55,6 +55,8 @@ int main(int argc, char** argv) try {
             sim = true;
         } else if (args[i] == "--flip-elbow") {
             cfg.elbow_inverted = true;
+        } else if (args[i] == "--no-flip-shoulder") {
+            cfg.shoulder_inverted = false;
         } else if (args[i] == "--port" && i + 1 < args.size()) {
             port = args[++i];
         } else {

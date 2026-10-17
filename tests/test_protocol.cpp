@@ -35,6 +35,17 @@ TEST(Protocol, ClassifiesFirmwareReplies) {
     EXPECT_EQ(protocol::parseReply("OK\r\n").text, "OK");
 }
 
+TEST(ArmConfig, ToServoAnglesAppliesInversions) {
+    ArmConfig cfg;
+    cfg.shoulder_inverted = true;
+    cfg.elbow_inverted = false;
+    EXPECT_EQ(toServoAngles({90.0, 120.0, 60.0, 80.0}, cfg), (JointAngles{90.0, 60.0, 60.0, 80.0}));
+
+    cfg.elbow_inverted = true;
+    const JointAngles q{10.0, 100.0, 140.0, 70.0};
+    EXPECT_EQ(toServoAngles(toServoAngles(q, cfg), cfg), q);  // own inverse
+}
+
 TEST(SimDriver, ClampsToJointLimitsAndLogs) {
     std::ostringstream log;
     SimDriver arm(ArmConfig{}, &log);
