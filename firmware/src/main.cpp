@@ -35,15 +35,47 @@ static const int HOME_SHOULDER = 90;
 static const int HOME_ELBOW    = 90;
 static const int HOME_GRIPPER  = 90;
 
+// ── Servo pulse range (µs) ────────────────────────────────────
+// Same as the original test firmware; ESP32Servo's default would be 544–2400 µs,
+// which shifts every angle by ~2°.
+static const int PULSE_MIN_US = 500;
+static const int PULSE_MAX_US = 2400;
+
 // ── Serial ────────────────────────────────────────────────────
 static const int BAUD_RATE    = 115200;
 static const int MAX_MSG_LEN  = 32;
 
-// ── Servo objects ─────────────────────────────────────────────
+// ── Staggered motion ──────────────────────────────────────────
+// Starting all servos at once draws the largest current peak, which a weak 5 V supply
+// cannot deliver (servos hum, positions drift). Joints are started one after another
+// instead, and joints whose target did not change are not touched at all.
+static const int STAGGER_MS = 120;   // pause between starting two servos
+static const int SETTLE_MS  = 300;   // wait after the last start before detaching
+
+// ── Joints ────────────────────────────────────────────────────
+static const int NUM_JOINTS = 4;
+static const int UNKNOWN    = -1;    // position before the first move after boot
+
 Servo servo_base;
 Servo servo_shoulder;
 Servo servo_elbow;
 Servo servo_gripper;
+
+struct Joint {
+    Servo& servo;
+    int    pin;
+    int    min_deg;
+    int    max_deg;
+    int    current;   // last commanded angle (SG90 has no position feedback)
+};
+
+// Order = order of the protocol fields = order in which joints are started.
+Joint joints[NUM_JOINTS] = {
+    {servo_base,     PIN_BASE,     BASE_MIN,     BASE_MAX,     UNKNOWN},
+    {servo_shoulder, PIN_SHOULDER, SHOULDER_MIN, SHOULDER_MAX, UNKNOWN},
+    {servo_elbow,    PIN_ELBOW,    ELBOW_MIN,    ELBOW_MAX,    UNKNOWN},
+    {servo_gripper,  PIN_GRIPPER,  GRIPPER_MIN,  GRIPPER_MAX,  UNKNOWN},
+};
 
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -54,25 +86,28 @@ int clamp(int value, int min_val, int max_val) {
     return value;
 }
 
-void move_to(int base, int shoulder, int elbow, int gripper) {
-    servo_base.write(    clamp(base,     BASE_MIN,     BASE_MAX));
-    servo_shoulder.write(clamp(shoulder, SHOULDER_MIN, SHOULDER_MAX));
-    servo_elbow.write(   clamp(elbow,    ELBOW_MIN,    ELBOW_MAX));
-    servo_gripper.write( clamp(gripper,  GRIPPER_MIN,  GRIPPER_MAX));
-}
-
 void detach_all() {
-    servo_base.detach();
-    servo_shoulder.detach();
-    servo_elbow.detach();
-    servo_gripper.detach();
+    for (Joint& j : joints) j.servo.detach();   // reduce jitter when idle
 }
 
-void attach_all() {
-    servo_base.attach(PIN_BASE);
-    servo_shoulder.attach(PIN_SHOULDER);
-    servo_elbow.attach(PIN_ELBOW);
-    servo_gripper.attach(PIN_GRIPPER);
+/**
+ * Move to the target angles (degrees, clamped to the joint limits), starting the joints
+ * one after another. Blocks until the servos had time to arrive, then detaches them.
+ */
+void move_staggered(const int target[NUM_JOINTS]) {
+    bool started = false;
+    for (Joint& j : joints) {
+        const int angle = clamp(*target++, j.min_deg, j.max_deg);
+        if (angle == j.current) continue;
+
+        if (started) delay(STAGGER_MS);
+        j.servo.attach(j.pin, PULSE_MIN_US, PULSE_MAX_US);
+        j.servo.write(angle);
+        j.current = angle;
+        started = true;
+    }
+    if (started) delay(SETTLE_MS);
+    detach_all();
 }
 
 
@@ -95,12 +130,9 @@ void setup() {
     Serial.begin(BAUD_RATE);
     delay(500);
 
-    attach_all();
-
-    // Move to home position on startup
-    move_to(HOME_BASE, HOME_SHOULDER, HOME_ELBOW, HOME_GRIPPER);
-    delay(800);
-    detach_all();   // reduce jitter when idle
+    // Move to home position on startup (all joints, since their position is unknown)
+    const int home[NUM_JOINTS] = {HOME_BASE, HOME_SHOULDER, HOME_ELBOW, HOME_GRIPPER};
+    move_staggered(home);
 
     Serial.println("READY");
 }
@@ -120,12 +152,9 @@ void loop() {
             if (buf_idx > 0) {
                 buf[buf_idx] = '\0';   // null-terminate
 
-                int base, shoulder, elbow, gripper;
-                if (parse_angles(buf, base, shoulder, elbow, gripper)) {
-                    attach_all();
-                    move_to(base, shoulder, elbow, gripper);
-                    delay(300);        // wait for servos to reach position
-                    detach_all();
+                int target[NUM_JOINTS];
+                if (parse_angles(buf, target[0], target[1], target[2], target[3])) {
+                    move_staggered(target);
                     Serial.println("OK");
                 } else {
                     Serial.print("ERR: bad format: ");
