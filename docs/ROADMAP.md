@@ -71,6 +71,27 @@ profiling.
 
 *C++:* `std::variant`-based state machine, logging, config files.
 
+## M6 — ROS 2 integration
+
+Wrap the existing libraries in ROS 2 (Jazzy) nodes instead of rewriting them. The core
+libraries stay ROS-free, so `arm_cli` and the tests keep working without ROS.
+
+- Platform: ROS 2 has no binary packages for Raspberry Pi OS and the Pi 3 has only 1 GB RAM, so
+  run ROS 2 in a Docker container (`ros:jazzy`, arm64) on the Pi, or run the heavy parts
+  (planning, RViz) on the PC (Ubuntu 24.04 / WSL) with the Pi as hardware node
+- `arm_driver` node around `RobotDriver`: subscribes to joint commands, publishes the
+  commanded joint states (`sensor_msgs/JointState`)
+- `camera` + `marker_detector` nodes: publish images and marker poses; camera calibration
+  as `sensor_msgs/CameraInfo`
+- URDF of the arm (link lengths from the M3 calibration), `robot_state_publisher`, TF tree
+  (camera ↔ base ↔ tip), visualisation in RViz
+- Launch file that starts everything; optional: MoveIt 2 for motion planning
+- Optional: micro-ROS on the ESP32, so the firmware talks to ROS directly
+
+*C++:* `rclcpp` (nodes, publishers/subscribers, timers, parameters), callbacks and executors,
+`colcon` / `ament_cmake` packaging next to plain CMake, keeping library code independent of the
+middleware.
+
 ## Later / optional
 
 - ONNX Runtime object detector instead of colour thresholds
