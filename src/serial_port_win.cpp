@@ -1,15 +1,14 @@
 #include "armvision/serial_port.hpp"
 
+// Win32 implementation of SerialPort. The POSIX one is in serial_port_posix.cpp;
+// CMake compiles exactly one of the two.
+
 #include <stdexcept>
 #include <system_error>
 
-#ifdef _WIN32
 #include <windows.h>
-#endif
 
 namespace armvision {
-
-#ifdef _WIN32
 
 namespace {
 
@@ -93,19 +92,6 @@ void SerialPort::discardInput() {
     PurgeComm(impl_->handle, PURGE_RXCLEAR);
     impl_->pending.clear();
 }
-
-#else  // POSIX: not implemented yet
-
-struct SerialPort::Impl {};
-
-SerialPort::SerialPort(const std::string&, unsigned) {
-    throw std::runtime_error("SerialPort: only implemented for Windows so far (termios TODO)");
-}
-void SerialPort::write(std::string_view) {}
-std::optional<std::string> SerialPort::readLine(std::chrono::milliseconds) { return std::nullopt; }
-void SerialPort::discardInput() {}
-
-#endif
 
 // Defined here, where Impl is a complete type.
 SerialPort::~SerialPort() = default;

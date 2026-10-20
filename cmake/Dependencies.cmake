@@ -21,17 +21,23 @@ if(NOT TARGET Eigen3::Eigen)
 endif()
 
 # ── GoogleTest ────────────────────────────────────────────────
+# Use an installed copy (e.g. Debian's libgtest-dev on the Pi), otherwise download it.
 if(ARMVISION_BUILD_TESTS)
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)  # match MSVC's default /MD runtime
-    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
-    FetchContent_Declare(googletest
-        URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz)
-    FetchContent_MakeAvailable(googletest)
+    find_package(GTest CONFIG QUIET)
+    if(NOT TARGET GTest::gtest_main)
+        message(STATUS "GTest not found -> fetching 1.15.2")
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)  # match MSVC's default /MD runtime
+        set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+        set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+        FetchContent_Declare(googletest
+            URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz)
+        FetchContent_MakeAvailable(googletest)
+    endif()
 endif()
 
 # ── OpenCV (optional) ─────────────────────────────────────────
-# Not fetched: it is large. Install it separately and pass -DOpenCV_DIR=<...>/build.
+# Not fetched: it is large. Linux: apt install libopencv-dev.
+# Windows: install the official release and pass -DOpenCV_DIR=<...>/build.
 set(ARMVISION_HAVE_OPENCV OFF)
 if(ARMVISION_BUILD_VISION)
     find_package(OpenCV 4.7 QUIET

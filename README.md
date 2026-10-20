@@ -7,7 +7,7 @@ kinematics and serial control and ending with closed-loop visual servoing and pi
 **Hardware**
 - Spacnana SNAM1500 arm with 4× SG90 servos (base, shoulder, elbow, gripper)
 - ESP32-S3 running [`firmware/src/main.cpp`](firmware/src/main.cpp) (text protocol, 115200 baud)
-- A USB webcam and printed ArUco markers
+- Raspberry Pi 3 with Camera Module 3 (target), Windows PC (development), printed ArUco markers
 
 ## Layout
 
@@ -16,7 +16,7 @@ include/armvision/      public headers
   arm_config.hpp        joint angles, limits, link lengths
   kinematics.hpp        forward kinematics + closed-form inverse kinematics (Eigen)
   protocol.hpp          encode/parse the firmware's text protocol
-  serial_port.hpp       RAII serial port (Win32, pImpl)
+  serial_port.hpp       RAII serial port (pImpl; Win32 and POSIX/termios implementations)
   robot_driver.hpp      RobotDriver interface, SerialArmDriver, SimDriver
   vision/               OpenCV code (only built if OpenCV is found)
 src/                    implementations
@@ -47,7 +47,20 @@ In that case, pin a complete toolset in a local `CMakeUserPresets.json` (not com
 the one used on the development machine:
 `"toolset": { "value": "v143,version=14.34.17.4", "strategy": "set" }`.
 
-### Optional: OpenCV (for the vision apps)
+## Build (Linux / Raspberry Pi OS)
+
+```bash
+sudo apt install -y build-essential cmake git libopencv-dev libeigen3-dev libgtest-dev
+cmake --preset linux
+cmake --build --preset linux
+ctest --preset linux
+```
+
+On Linux, Eigen, GoogleTest and OpenCV come from the system packages. The ESP32 shows up as
+`/dev/ttyACM0`; add yourself to the `dialout` group to use it without `sudo`.
+Needs GCC 13+ (`std::format`) and OpenCV 4.7+, e.g. Raspberry Pi OS based on Debian 13 (Trixie).
+
+### Optional on Windows: OpenCV (for the vision apps)
 
 Install the official Windows release of OpenCV ≥ 4.7 (ArUco lives in `objdetect` since 4.7),
 e.g. extract it to `C:\opencv`, then configure with:
@@ -77,8 +90,9 @@ Frame and units: metres, origin at the base centre on the table, z up, x along b
 ## Status
 
 See [docs/ROADMAP.md](docs/ROADMAP.md). Milestone 0 (scaffold, kinematics, protocol, serial
-driver, tests) is done. Vision builds against OpenCV 4.14; marker detection is unit-tested on
-synthetic images. The serial driver and `camera_view` are not yet tested with real hardware.
+driver, tests) is done and the arm moves from `arm_cli` on Windows. Vision builds against
+OpenCV 4.14; marker detection is unit-tested on synthetic images and works with a webcam.
+In progress: porting to the Raspberry Pi (POSIX serial port, Pi camera).
 
 ## License
 

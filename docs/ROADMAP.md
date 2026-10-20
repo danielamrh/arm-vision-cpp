@@ -20,9 +20,23 @@ practises.
   18.2–21 cm from the shoulder axis, a thin spherical shell. Measure the real mechanical
   limits of each joint and widen `ArmConfig` (and the firmware limits) where safe.
 - Add a table-collision check (tip must stay above z = 0) to the IK / driver
-- Optional: implement the POSIX `SerialPort` (termios)
+- Proper 5 V / 4 A servo supply; check whether the shoulder sags under gravity once the
+  servos are detached (if so, keep shoulder and elbow attached)
 
 *C++:* error handling with exceptions vs. `std::expected`-style results, `std::chrono`.
+
+## M1.5 — Raspberry Pi as the robot computer
+
+- Raspberry Pi OS Lite 64-bit (Trixie), headless, SSH; build the project natively on the Pi
+- POSIX `SerialPort` with termios, tested against a pseudo-terminal
+  (exercise: `src/serial_port_posix.cpp`, tests in `tests/test_serial_posix.cpp`)
+- `arm_cli --port /dev/ttyACM0` on the Pi
+- Camera Module 3 via libcamera: grab frames into `cv::Mat` (libcamera C++ API or a GStreamer
+  `libcamerasrc` pipeline), lock the autofocus to a fixed lens position
+- No display on the Pi: save frames / stream them to the PC instead of `cv::imshow`
+
+*C++:* platform-specific code behind one interface, POSIX APIs (`open`, `termios`, `poll`),
+errno and `std::system_error`, test doubles (pty), CMake per platform.
 
 ## M2 — Camera calibration
 

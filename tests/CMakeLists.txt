@@ -3,6 +3,10 @@ add_executable(armvision_tests
     test_protocol.cpp)
 target_link_libraries(armvision_tests PRIVATE armvision::core GTest::gtest_main)
 
+if(UNIX)
+    target_sources(armvision_tests PRIVATE test_serial_posix.cpp)
+endif()
+
 if(ARMVISION_HAVE_OPENCV)
     target_sources(armvision_tests PRIVATE test_vision.cpp)
     target_link_libraries(armvision_tests PRIVATE armvision::vision)
