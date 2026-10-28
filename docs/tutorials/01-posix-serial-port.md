@@ -55,7 +55,7 @@ in die globale Variable **`errno`** (z.B. `ENOENT` = „Datei existiert nicht“
 Den Descriptor speicherst du in `impl_->fd`. Geschlossen wird er automatisch im Destruktor von
 `Impl` (RAII), auch wenn der Konstruktor später eine Exception wirft.
 
-**Aufgabe:** TODO 1 in `src/serial_port_posix.cpp`.
+**Aufgabe:** TODO 1 in `src/serial_port_posix.cpp`. (Die TODO-Nummern im Code entsprechen den Lektionen.)
 
 <details><summary>Hinweis 1</summary>
 
@@ -150,7 +150,7 @@ nur eine halbe). Fehlt nur noch das **Warten auf neue Daten**:
   `errno == EINTR`. Das ist kein echter Fehler: einfach die Schleife weiterlaufen lassen.
 - Danach liest `read()` die verfügbaren Bytes in einen Puffer, und du hängst sie an `pending` an.
 
-**Aufgabe:** TODO 4.
+**Aufgabe:** TODO 3 in `readLine`.
 
 <details><summary>Hinweis 1: Restzeit berechnen</summary>
 
@@ -188,7 +188,7 @@ benutzen? (Tipp: Was passiert mit dem Zeitlimit, wenn Daten tröpfchenweise anko
 tatsächlich geschriebene Anzahl zurück. Robuster Code schreibt deshalb in einer Schleife, bis
 alles draußen ist. Auch hier gilt: `-1` mit `EINTR` heißt „nochmal versuchen“.
 
-**Aufgabe:** TODO 3.
+**Aufgabe:** TODO 4 in `write`.
 
 <details><summary>Hinweis</summary>
 
@@ -209,7 +209,7 @@ Raw-Modus aus Lektion 2.
 unserem eigenen `pending`. Beide müssen geleert werden. Der Treiber benutzt das nach dem
 `READY` des ESP32, damit alte Meldungen nicht als Antwort auf einen neuen Befehl gelesen werden.
 
-**Aufgabe:** TODO 5 (`tcflush` mit `TCIFLUSH`, und `pending.clear()`).
+**Aufgabe:** TODO 5 in `discardInput` (`tcflush` mit `TCIFLUSH`, und `pending.clear()`).
 
 Jetzt sollten alle 7 Tests grün sein und die Warnung „`throwErrno` defined but not used“ ist weg.
 
