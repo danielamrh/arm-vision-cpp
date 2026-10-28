@@ -2,74 +2,108 @@
 
 // ChArUco camera calibration.
 //
-// EXERCISE: the parts marked TODO are left for you to implement, one per lesson.
-// Step-by-step guide: docs/tutorials/02-camera-calibration.md
-// tests/test_calibration.cpp checks them with synthetic images (no camera needed):
+// Written step by step in docs/tutorials/02-camera-calibration.md.
+// tests/test_calibration.cpp checks it with synthetic images (no camera needed):
 //   Windows:  powershell -ExecutionPolicy Bypass -File tools/test.ps1 "Calibration.*"
 //   Linux:    ctest --preset linux -R Calibration
 
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <opencv2/calib3d.hpp>
 
 namespace armvision::vision {
 
 cv::aruco::CharucoBoard makeCharucoBoard(const CharucoBoardSpec& spec) {
-    // TODO 1 (lesson 1): build the board from the spec.
-    //   cv::aruco::CharucoBoard has a constructor taking
-    //   (cv::Size(squares in x, squares in y), square length, marker length, dictionary).
-    //   The dictionary comes from cv::aruco::getPredefinedDictionary(spec.dictionary).
-    (void)spec;
-    throw std::logic_error("makeCharucoBoard: not implemented yet");
+    // Chessboard with ArUco markers in the white squares.
+    return cv::aruco::CharucoBoard(
+        cv::Size(spec.squares_x, spec.squares_y),
+        spec.square_length,
+        spec.marker_length,
+        cv::aruco::getPredefinedDictionary(spec.dictionary)
+    );
 }
 
 void CameraIntrinsics::save(const std::string& path) const {
-    // TODO 4 (lesson 4): write all four members with cv::FileStorage (mode WRITE).
-    //   - throw std::runtime_error if fs.isOpened() is false
-    //   - fs << "name" << value << "name2" << value2 ...   (cv::Size: write width and height
-    //     separately as "image_width" / "image_height")
-    (void)path;
-    throw std::logic_error("CameraIntrinsics::save: not implemented yet");
+    cv::FileStorage fs(path, cv::FileStorage::WRITE);  // YAML or XML, chosen by the extension
+    if (!fs.isOpened()) {
+        throw std::runtime_error("failed to open file for writing: " + path);
+    }
+    fs << "image_width" << image_size.width << "image_height" << image_size.height;
+    fs << "camera_matrix" << camera_matrix;
+    fs << "dist_coeffs" << dist_coeffs;
+    fs << "rms_reprojection_error" << rms_reprojection_error;
+    // No fs.release() needed: the destructor closes the file (RAII).
 }
 
 CameraIntrinsics CameraIntrinsics::load(const std::string& path) {
-    // TODO 4 (lesson 4): the reverse of save().
-    //   - cv::FileStorage with mode READ; not opened -> std::runtime_error
-    //   - fs["name"] >> member;  for every value written by save()
-    //   - if the camera matrix, the distortion or the image size is missing (empty),
-    //     throw std::runtime_error: a half-read calibration is worse than none
-    (void)path;
-    throw std::logic_error("CameraIntrinsics::load: not implemented yet");
+    cv::FileStorage fs(path, cv::FileStorage::READ);
+    if (!fs.isOpened()) {
+        throw std::runtime_error("failed to open file for reading: " + path);
+    }
+
+    // Read straight into one result object; missing keys leave the members empty / 0.
+    CameraIntrinsics c;
+    fs["image_width"] >> c.image_size.width;
+    fs["image_height"] >> c.image_size.height;
+    fs["camera_matrix"] >> c.camera_matrix;
+    fs["dist_coeffs"] >> c.dist_coeffs;
+    fs["rms_reprojection_error"] >> c.rms_reprojection_error;
+
+    // A half-read calibration is worse than none: it would silently give wrong measurements.
+    if (c.camera_matrix.empty() || c.dist_coeffs.empty() || c.image_size.empty()) {
+        throw std::runtime_error("incomplete calibration data in file: " + path);
+    }
+    return c;
 }
 
 CharucoCalibrator::CharucoCalibrator(const CharucoBoardSpec& spec)
     : board_(makeCharucoBoard(spec)), detector_(board_) {}
 
 bool CharucoCalibrator::addView(const cv::Mat& image) {
-    // TODO 2 (lesson 2): detect the board and keep its corners.
-    //   1. If image_size_ is already set (not empty) and image.size() differs:
-    //      throw std::invalid_argument (one calibration = one camera resolution).
-    //   2. detector_.detectBoard(image, charuco_corners, charuco_ids)
-    //      with std::vector<cv::Point2f> corners and std::vector<int> ids.
-    //   3. Fewer than kMinCornersPerView corners: return false (and change nothing).
-    //   4. board_.matchImagePoints(corners, ids, object_points, image_points) pairs every
-    //      detected corner with its 3D position on the board (std::vector<cv::Point3f> /
-    //      std::vector<cv::Point2f>).
-    //   5. Remember the image size, append both vectors to object_points_ / image_points_,
-    //      return true.
-    (void)image;
-    throw std::logic_error("CharucoCalibrator::addView: not implemented yet");
+    // One calibration is valid for exactly one resolution.
+    if (!image_size_.empty() && image.size() != image_size_) {
+        throw std::invalid_argument("all images must have the same size");
+    }
+
+    // detectBoard() returns void: the result is in the output vectors.
+    std::vector<cv::Point2f> charuco_corners;
+    std::vector<int> charuco_ids;
+    detector_.detectBoard(image, charuco_corners, charuco_ids);
+    if (charuco_corners.size() < kMinCornersPerView) return false;
+
+    // Pair every detected corner with its 3D position on the board (metres, z = 0).
+    std::vector<cv::Point3f> object_points;
+    std::vector<cv::Point2f> image_points;
+    board_.matchImagePoints(charuco_corners, charuco_ids, object_points, image_points);
+
+    // One inner list per view: calibrateCamera() estimates a separate board pose for each.
+    image_size_ = image.size();
+    object_points_.push_back(std::move(object_points));
+    image_points_.push_back(std::move(image_points));
+    return true;
 }
 
 CameraIntrinsics CharucoCalibrator::calibrate() const {
-    // TODO 3 (lesson 3): run the calibration.
-    //   - fewer than kMinViews views: throw std::runtime_error (say how many there are)
-    //   - cv::calibrateCamera(object_points_, image_points_, image_size_,
-    //                         camera_matrix, dist_coeffs, rvecs, tvecs)
-    //     fills the camera matrix and distortion and returns the RMS reprojection error.
-    //     rvecs / tvecs (std::vector<cv::Mat>) are the board poses, not needed here.
-    throw std::logic_error("CharucoCalibrator::calibrate: not implemented yet");
+    if (viewCount() < kMinViews) {
+        throw std::runtime_error("need at least " + std::to_string(kMinViews) +
+                                 " views for calibration, have " + std::to_string(viewCount()));
+    }
+
+    // Besides the camera, calibrateCamera() estimates the board pose in every view
+    // (rvecs / tvecs); we do not need them here.
+    cv::Mat camera_matrix, dist_coeffs;
+    std::vector<cv::Mat> rvecs, tvecs;
+    const double rms = cv::calibrateCamera(object_points_, image_points_, image_size_,
+                                           camera_matrix, dist_coeffs, rvecs, tvecs);
+
+    // C++20 designated initializers: every member by name, in declaration order.
+    return {.image_size = image_size_,
+            .camera_matrix = camera_matrix,
+            .dist_coeffs = dist_coeffs,
+            .rms_reprojection_error = rms};
 }
 
 }  // namespace armvision::vision
