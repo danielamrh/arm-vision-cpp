@@ -5,7 +5,7 @@
 // EXERCISE: the parts marked TODO are left for you to implement, one per lesson.
 // Step-by-step guide: docs/tutorials/02-camera-calibration.md
 // tests/test_calibration.cpp checks them with synthetic images (no camera needed):
-//   Windows:  powershell -ExecutionPolicy Bypass -File tools	est.ps1 "Calibration.*"
+//   Windows:  powershell -ExecutionPolicy Bypass -File tools/test.ps1 "Calibration.*"
 //   Linux:    ctest --preset linux -R Calibration
 
 #include <stdexcept>
