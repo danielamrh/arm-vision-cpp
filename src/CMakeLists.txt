@@ -22,6 +22,7 @@ armvision_set_warnings(armvision_core)
 
 if(ARMVISION_HAVE_OPENCV)
     add_library(armvision_vision
+        vision/calibration.cpp
         vision/marker_detector.cpp)
     add_library(armvision::vision ALIAS armvision_vision)
 

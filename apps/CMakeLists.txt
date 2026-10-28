@@ -3,7 +3,7 @@ target_link_libraries(arm_cli PRIVATE armvision::core)
 armvision_set_warnings(arm_cli)
 
 if(ARMVISION_HAVE_OPENCV)
-    foreach(app camera_view make_markers)
+    foreach(app camera_view make_markers make_charuco_board calibrate_camera)
         add_executable(${app} ${app}.cpp)
         target_link_libraries(${app} PRIVATE armvision::vision)
         armvision_set_warnings(${app})

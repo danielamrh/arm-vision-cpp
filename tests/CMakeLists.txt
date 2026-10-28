@@ -8,7 +8,7 @@ if(UNIX)
 endif()
 
 if(ARMVISION_HAVE_OPENCV)
-    target_sources(armvision_tests PRIVATE test_vision.cpp)
+    target_sources(armvision_tests PRIVATE test_calibration.cpp test_vision.cpp)
     target_link_libraries(armvision_tests PRIVATE armvision::vision)
     if(WIN32)
         add_custom_command(TARGET armvision_tests POST_BUILD

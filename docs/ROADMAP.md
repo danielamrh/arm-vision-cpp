@@ -41,7 +41,9 @@ errno and `std::system_error`, test doubles (pty), CMake per platform.
 ## M2 — Camera calibration
 
 - `calibrate_camera` app: ChArUco board, `cv::calibrateCamera`, save intrinsics to YAML
+  (exercise: `src/vision/calibration.cpp`, guide: `docs/tutorials/02-camera-calibration.md`)
 - Undistortion and reprojection error report
+- Calibrate the Pi camera once it is mounted and its focus is locked
 
 *C++:* `cv::FileStorage`, value types for calibration data, small CLI argument parser.
 

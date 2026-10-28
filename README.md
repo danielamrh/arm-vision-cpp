@@ -24,11 +24,13 @@ apps/
   arm_cli               move the arm from the command line (or --sim)
   camera_view           live webcam view with ArUco detection     [OpenCV]
   make_markers          print-ready ArUco markers                 [OpenCV]
+  make_charuco_board    print-ready calibration board             [OpenCV]
+  calibrate_camera      camera calibration (live or from photos)  [OpenCV]
 tests/                  GoogleTest unit tests
 firmware/               ESP32-S3 firmware (PlatformIO, Arduino framework)
 docs/ROADMAP.md         milestones and what each one teaches
 docs/tutorials/         step-by-step exercises (German)
-tools/                  helper scripts (e.g. POSIX tests in WSL)
+tools/                  helper scripts (test.ps1, POSIX tests in WSL)
 ```
 
 Everything above `RobotDriver` is hardware-agnostic. A different arm only needs a new driver.
