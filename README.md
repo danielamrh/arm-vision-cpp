@@ -27,6 +27,8 @@ apps/
 tests/                  GoogleTest unit tests
 firmware/               ESP32-S3 firmware (PlatformIO, Arduino framework)
 docs/ROADMAP.md         milestones and what each one teaches
+docs/tutorials/         step-by-step exercises (German)
+tools/                  helper scripts (e.g. POSIX tests in WSL)
 ```
 
 Everything above `RobotDriver` is hardware-agnostic. A different arm only needs a new driver.

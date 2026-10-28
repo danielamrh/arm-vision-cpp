@@ -5,8 +5,10 @@
 //
 // ──────────────────────────────────────────────────────────────────────────────
 // EXERCISE: the parts marked TODO are left for you to implement.
+// Step-by-step guide: docs/tutorials/01-posix-serial-port.md
 // tests/test_serial_posix.cpp checks them against a pseudo-terminal (no hardware needed):
-//   ctest --test-dir build/linux -R SerialPortPosix --output-on-failure
+//   Windows PC (WSL):  wsl bash tools/test_serial_wsl.sh
+//   Linux / Pi:        ctest --preset linux -R SerialPortPosix
 //
 // Useful man pages:  man 2 open,  man 3 termios,  man 2 poll,  man 2 read,  man 2 write
 // ──────────────────────────────────────────────────────────────────────────────
