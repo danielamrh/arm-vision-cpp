@@ -15,7 +15,7 @@
 
 #include "armvision/vision/calibration.hpp"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
     const std::string out = argc > 1 ? argv[1] : "charuco_board.png";
 
     const armvision::vision::CharucoBoardSpec spec;  // 7 x 5 squares of 30 mm
@@ -36,4 +36,7 @@ int main(int argc, char** argv) {
     std::cout << "wrote " << out << " (" << board.cols << " x " << board.rows
               << " px = 300 dpi, print at 100 %)\n";
     return EXIT_SUCCESS;
+} catch (const std::exception& e) {
+    std::cerr << "error: " << e.what() << '\n';
+    return EXIT_FAILURE;
 }

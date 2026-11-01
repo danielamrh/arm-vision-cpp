@@ -30,7 +30,7 @@ try {
         & $cmake --preset $configure
         if ($LASTEXITCODE -ne 0) { throw "configure failed" }
     }
-    & $cmake --build --preset $build --target armvision_tests
+    & $cmake --build --preset $build   # everything, so the apps use the current code too
     if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
     $env:OPENCV_LOG_LEVEL = "ERROR"  # hide OpenCV's plugin-loading messages
