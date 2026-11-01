@@ -24,6 +24,13 @@ void SerialArmDriver::waitForReady() {
         const auto line = port_.readLine(remaining);
         if (line && protocol::parseReply(*line).type == protocol::ReplyType::Ready) break;
     }
+
+    // The ESP32 may still hold half a line in its own input buffer, e.g. left over from another
+    // program that had the port open. A lone newline makes it finish (and reject) that line, so
+    // it cannot get glued in front of our first command. If its buffer was empty, the empty line
+    // is ignored and no answer comes. Either way, drop whatever arrives.
+    port_.write("\n");
+    (void)port_.readLine(std::chrono::milliseconds(200));
     port_.discardInput();
 }
 
