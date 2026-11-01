@@ -12,7 +12,7 @@
     },
     {
       "name": "linux",
-      "displayName": "Linux / Raspberry Pi: Makefiles, Release",
+      "displayName": "Linux / Raspberry Pi: Makefiles, Release (1 job: 2 parallel compilers exhaust the 1 GB RAM of a Pi 3)",
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/linux",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" },
@@ -22,7 +22,7 @@
   "buildPresets": [
     { "name": "debug", "configurePreset": "msvc", "configuration": "Debug" },
     { "name": "release", "configurePreset": "msvc", "configuration": "Release" },
-    { "name": "linux", "configurePreset": "linux", "jobs": 2 }
+    { "name": "linux", "configurePreset": "linux", "jobs": 1 }
   ],
   "testPresets": [
     {
