@@ -1,6 +1,7 @@
 add_library(armvision_core
     arm_config.cpp
     kinematics.cpp
+    motion.cpp
     protocol.cpp
     robot_driver.cpp)
 add_library(armvision::core ALIAS armvision_core)

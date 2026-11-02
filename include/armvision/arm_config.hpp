@@ -30,6 +30,9 @@ struct ArmConfig {
     JointLimits elbow{30.0, 150.0};
     JointLimits gripper{60.0, 120.0};
 
+    /// Safety margin: tip and elbow must stay at least this far above the table (metres).
+    double min_height{0.01};
+
     // Servos mounted the other way round: the firmware gets 180° - angle.
     // Kinematics always works with the model convention (see kinematics.hpp).
     bool shoulder_inverted{true};  // measured on the real arm: 120° lowered the tip

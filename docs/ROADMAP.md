@@ -20,6 +20,8 @@ practises.
   18.2–21 cm from the shoulder axis, a thin spherical shell. Measure the real mechanical
   limits of each joint and widen `ArmConfig` (and the firmware limits) where safe.
 - Add a table-collision check (tip must stay above z = 0) to the IK / driver
+  (exercise: `src/motion.cpp`, guide: `docs/tutorials/03-motion-planning.md`; also joint
+  interpolation, easing and straight Cartesian lines)
 - Proper 5 V / 4 A servo supply; check whether the shoulder sags under gravity once the
   servos are detached (if so, keep shoulder and elbow attached)
 

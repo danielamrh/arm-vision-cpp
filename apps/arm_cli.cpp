@@ -3,7 +3,10 @@
 //   arm_cli [--port COM3 | --sim] [--flip-elbow] [--no-flip-shoulder] home
 //   arm_cli ... joints <base> <shoulder> <elbow> <gripper>   model degrees (see arm_config.hpp)
 //   arm_cli ... xyz <x> <y> <z>                              metres, base frame (uses IK)
+//   arm_cli ... line <x> <y> <z> [step_m=0.01]               straight line from the current pose
 //   arm_cli fk <base> <shoulder> <elbow>                     print tip position, no hardware
+//
+// Every pose is checked with findViolation() before anything moves; unsafe poses are refused.
 
 #include <cstdlib>
 #include <iostream>
@@ -11,9 +14,11 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "armvision/kinematics.hpp"
+#include "armvision/motion.hpp"
 #include "armvision/robot_driver.hpp"
 
 namespace {
@@ -26,6 +31,7 @@ int usage() {
                  "  arm_cli [--port COM3 | --sim] [options] home\n"
                  "  arm_cli [--port COM3 | --sim] [options] joints <b> <s> <e> <g>\n"
                  "  arm_cli [--port COM3 | --sim] [options] xyz <x> <y> <z>\n"
+                 "  arm_cli [--port COM3 | --sim] [options] line <x> <y> <z> [step_m]\n"
                  "  arm_cli fk <b> <s> <e>\n"
                  "options: --flip-elbow, --no-flip-shoulder\n";
     return EXIT_FAILURE;
@@ -86,23 +92,40 @@ int main(int argc, char** argv) try {
         arm = std::make_unique<armvision::SerialArmDriver>(port, cfg);
     }
 
-    JointAngles target;
+    std::vector<JointAngles> path;  // waypoints to send, in order
     if (cmd == "home" && nums.empty()) {
-        target = JointAngles{};
+        path = {JointAngles{}};
     } else if (cmd == "joints" && nums.size() == 4) {
-        target = {nums[0], nums[1], nums[2], nums[3]};
+        path = {{nums[0], nums[1], nums[2], nums[3]}};
     } else if (cmd == "xyz" && nums.size() == 3) {
         const auto q = armvision::inverseKinematics({nums[0], nums[1], nums[2]}, cfg);
         if (!q) {
             std::cerr << "target not reachable within the joint limits\n";
             return EXIT_FAILURE;
         }
-        target = *q;
+        path = {*q};
+    } else if (cmd == "line" && (nums.size() == 3 || nums.size() == 4)) {
+        const double step = nums.size() == 4 ? nums[3] : 0.01;
+        auto line =
+            armvision::straightLine(arm->commanded(), {nums[0], nums[1], nums[2]}, cfg, step);
+        if (!line) {
+            std::cerr << "no safe straight line to that target\n";
+            return EXIT_FAILURE;
+        }
+        path = std::move(*line);
+        std::cout << path.size() << " waypoints\n";
     } else {
         return usage();
     }
 
-    arm->moveTo(target);
+    // Check everything first, so we never stop halfway through a path.
+    for (const auto& q : path) {
+        if (const auto violation = armvision::findViolation(q, cfg)) {
+            std::cerr << "refusing to move: " << armvision::toString(*violation) << '\n';
+            return EXIT_FAILURE;
+        }
+    }
+    for (const auto& q : path) arm->moveTo(q);
     const auto q = arm->commanded();
     std::cout << "commanded: " << q.base << ", " << q.shoulder << ", " << q.elbow << ", "
               << q.gripper << '\n';

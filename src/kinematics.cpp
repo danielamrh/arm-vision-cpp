@@ -36,6 +36,13 @@ Eigen::Vector3d forwardKinematics(const JointAngles& q, const ArmConfig& cfg) {
     return {r * std::cos(b), r * std::sin(b), cfg.shoulder_height + h};
 }
 
+Eigen::Vector3d elbowPosition(const JointAngles& q, const ArmConfig& cfg) {
+    const double b = toRad(q.base);
+    const double s = toRad(q.shoulder - 90.0);
+    const double r = cfg.upper_arm * std::cos(s);
+    return {r * std::cos(b), r * std::sin(b), cfg.shoulder_height + cfg.upper_arm * std::sin(s)};
+}
+
 std::optional<JointAngles> inverseKinematics(const Eigen::Vector3d& target, const ArmConfig& cfg,
                                              const JointAngles& reference) {
     const double l2 = cfg.upper_arm;

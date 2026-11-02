@@ -18,6 +18,9 @@ namespace armvision {
 /// Position of the gripper tip in the base frame.
 [[nodiscard]] Eigen::Vector3d forwardKinematics(const JointAngles& q, const ArmConfig& cfg);
 
+/// Position of the elbow joint in the base frame.
+[[nodiscard]] Eigen::Vector3d elbowPosition(const JointAngles& q, const ArmConfig& cfg);
+
 /// Closed-form inverse kinematics for base, shoulder and elbow.
 /// Up to four solutions exist (reaching over the front or the back of the base, elbow up or
 /// down). The one inside the joint limits that is closest to `reference` is returned.

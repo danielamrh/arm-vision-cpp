@@ -1,5 +1,6 @@
 add_executable(armvision_tests
     test_kinematics.cpp
+    test_motion.cpp
     test_protocol.cpp)
 target_link_libraries(armvision_tests PRIVATE armvision::core GTest::gtest_main)
 
