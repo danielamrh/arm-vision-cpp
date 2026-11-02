@@ -51,10 +51,14 @@ concept Easing = std::invocable<F, double> &&
 inline double linear(double t) { return t; }
 
 /// Starts and stops smoothly: f(0) = 0, f(1) = 1, and zero slope at both ends.
-inline double smoothstep(double t) {
-    // TODO 3a (lesson 3): the classic smoothstep polynomial 3t^2 - 2t^3.
-    (void)t;
-    throw std::logic_error("smoothstep: not implemented yet");
+inline double smoothstep(double t) { return t * t * (3.0 - 2.0 * t); }
+
+/// The pose a fraction `a` of the way from `from` to `to` (a = 0: from, a = 1: to).
+[[nodiscard]] inline JointAngles lerp(const JointAngles& from, const JointAngles& to, double a) {
+    return {from.base + a * (to.base - from.base),
+            from.shoulder + a * (to.shoulder - from.shoulder),
+            from.elbow + a * (to.elbow - from.elbow),
+            from.gripper + a * (to.gripper - from.gripper)};
 }
 
 /// `steps` waypoints from `from` (exclusive) to `to` (inclusive). Waypoint i (1..steps) is at
@@ -63,13 +67,13 @@ template <Easing E>
 [[nodiscard]] std::vector<JointAngles> interpolateEased(const JointAngles& from,
                                                         const JointAngles& to, std::size_t steps,
                                                         E ease) {
-    // TODO 3b (lesson 3): for i = 1..steps: t = i / steps, a = ease(t),
-    //   joint = from + a * (to - from) for base, shoulder, elbow and gripper.
-    (void)from;
-    (void)to;
-    (void)steps;
-    (void)ease;
-    throw std::logic_error("interpolateEased: not implemented yet");
+    std::vector<JointAngles> waypoints;
+    waypoints.reserve(steps);
+    for (std::size_t i = 1; i <= steps; ++i) {
+        const double t = static_cast<double>(i) / static_cast<double>(steps);
+        waypoints.push_back(lerp(from, to, ease(t)));
+    }
+    return waypoints;
 }
 
 // ── Lesson 4: straight lines in space ─────────────────────────

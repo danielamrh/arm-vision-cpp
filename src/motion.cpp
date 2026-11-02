@@ -2,71 +2,86 @@
 
 // Motion planning: safety checks and paths made of small steps.
 //
-// EXERCISE: the parts marked TODO are left for you to implement, one per lesson
-// (lesson 3 lives in include/armvision/motion.hpp, because templates must be in headers).
-// Step-by-step guide: docs/tutorials/03-motion-planning.md
-// Tests: tests/test_motion.cpp, no hardware needed:
+// Written step by step in docs/tutorials/03-motion-planning.md (lesson 3, the templates, lives
+// in include/armvision/motion.hpp). Tests: tests/test_motion.cpp, no hardware needed:
 //   Windows:  powershell -ExecutionPolicy Bypass -File tools/test.ps1 "Motion.*"
 //   Linux:    ctest --preset linux -R Motion
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #include "armvision/kinematics.hpp"
 
 namespace armvision {
 
+namespace {
+
+/// Number of equal steps needed to cover `distance` with steps of at most `max_step`, at least 1.
+/// Throws std::invalid_argument for a step that is not positive (including NaN) and for absurd
+/// requests: converting a huge or NaN double to an integer would be undefined behaviour.
+std::size_t stepCount(double distance, double max_step, const char* caller) {
+    if (!(max_step > 0.0)) {
+        throw std::invalid_argument(std::string(caller) + ": step must be positive");
+    }
+    constexpr double kMaxSteps = 1e6;
+    const double steps = std::ceil(distance / max_step);
+    if (!(steps <= kMaxSteps)) {  // also true for NaN
+        throw std::invalid_argument(std::string(caller) + ": too many steps (or invalid input)");
+    }
+    return std::max<std::size_t>(1, static_cast<std::size_t>(steps));
+}
+
+}  // namespace
+
 std::string_view toString(Violation v) {
-    // TODO 1a (lesson 1): a `switch` over the enum that returns a short English description
-    //   for every value, e.g. "the gripper tip is too close to the table".
-    (void)v;
-    throw std::logic_error("toString(Violation): not implemented yet");
+    // Lower case: the text is used inside sentences ("refusing to move: ...").
+    switch (v) {
+        case Violation::JointLimit: return "a joint is outside its limits";
+        case Violation::TipBelowTable: return "the gripper tip is below the minimum height";
+        case Violation::ElbowBelowTable: return "the elbow is below the minimum height";
+    }
+    return "unknown violation";
 }
 
 std::optional<Violation> findViolation(const JointAngles& q, const ArmConfig& cfg) {
-    // TODO 1b (lesson 1): check the rules in the order of the enum and return the first one
-    //   that is broken:
-    //   - withinLimits(q, cfg, 1e-6)                      (arm_config.hpp)
-    //   - forwardKinematics(q, cfg).z() >= cfg.min_height  (kinematics.hpp)
-    //   - elbowPosition(q, cfg).z()     >= cfg.min_height
-    //   Nothing broken: return std::nullopt.
-    (void)q;
-    (void)cfg;
-    throw std::logic_error("findViolation: not implemented yet");
+    // Small tolerance: poses computed by IK land on a limit like 150.0000000001.
+    if (!withinLimits(q, cfg, 1e-6)) return Violation::JointLimit;
+    if (forwardKinematics(q, cfg).z() < cfg.min_height) return Violation::TipBelowTable;
+    if (elbowPosition(q, cfg).z() < cfg.min_height) return Violation::ElbowBelowTable;
+    return std::nullopt;
 }
 
 std::vector<JointAngles> interpolateJoints(const JointAngles& from, const JointAngles& to,
                                            double max_step_deg) {
-    // TODO 2 (lesson 2):
-    //   1. max_step_deg <= 0 -> throw std::invalid_argument
-    //   2. largest = the largest |to.x - from.x| over the four joints (std::max with an
-    //      initializer list takes any number of values: std::max({a, b, c, d}))
-    //   3. largest == 0 -> return {} (nothing to do)
-    //   4. steps = ceil(largest / max_step_deg); waypoint i (1..steps) is at fraction i / steps
-    //      of the way from `from` to `to`, for all four joints
-    (void)from;
-    (void)to;
-    (void)max_step_deg;
-    throw std::logic_error("interpolateJoints: not implemented yet");
+    // The joint with the largest move sets the number of steps, so all joints arrive together.
+    const double largest = std::max({std::abs(to.base - from.base),
+                                     std::abs(to.shoulder - from.shoulder),
+                                     std::abs(to.elbow - from.elbow),
+                                     std::abs(to.gripper - from.gripper)});
+    const std::size_t steps = stepCount(largest, max_step_deg, "interpolateJoints");
+    if (largest == 0.0) return {};
+    return interpolateEased(from, to, steps, linear);  // evenly spaced = linear easing
 }
 
 std::optional<std::vector<JointAngles>> straightLine(const JointAngles& from,
                                                      const Eigen::Vector3d& target,
                                                      const ArmConfig& cfg, double step_m) {
-    // TODO 4 (lesson 4):
-    //   1. step_m <= 0 -> throw std::invalid_argument
-    //   2. start = forwardKinematics(from, cfg); steps = ceil(|target - start| / step_m), at
-    //      least 1
-    //   3. for i = 1..steps: point = start + (i / steps) * (target - start)
-    //        q = inverseKinematics(point, cfg, reference)   with reference = previous waypoint
-    //        (the first time: `from`)
-    //        no solution or findViolation(*q, cfg) -> return std::nullopt
-    //        otherwise append *q and use it as the next reference
-    (void)from;
-    (void)target;
-    (void)cfg;
-    (void)step_m;
-    throw std::logic_error("straightLine: not implemented yet");
+    const Eigen::Vector3d start = forwardKinematics(from, cfg);
+    const std::size_t steps = stepCount((target - start).norm(), step_m, "straightLine");
+
+    std::vector<JointAngles> waypoints;
+    waypoints.reserve(steps);
+    JointAngles reference = from;  // keeps IK on the same solution branch from step to step
+    for (std::size_t i = 1; i <= steps; ++i) {
+        const double fraction = static_cast<double>(i) / static_cast<double>(steps);
+        const Eigen::Vector3d point = start + fraction * (target - start);
+        const auto q = inverseKinematics(point, cfg, reference);
+        if (!q || findViolation(*q, cfg)) return std::nullopt;  // unreachable or unsafe
+        waypoints.push_back(*q);
+        reference = *q;
+    }
+    return waypoints;
 }
 
 }  // namespace armvision
